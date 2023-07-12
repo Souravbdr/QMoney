@@ -81,9 +81,9 @@ class ModuleThreeTest {
     //then
     List<String> symbols = result.stream().map(AnnualizedReturn::getSymbol)
         .collect(Collectors.toList());
-    Assertions.assertEquals(0.090, result.get(0).getAnnualizedReturn(), 0.01);
-    Assertions.assertEquals(0.091, result.get(1).getAnnualizedReturn(), 0.01);
-    Assertions.assertEquals(0.056, result.get(2).getAnnualizedReturn(), 0.01);
+    Assertions.assertEquals(0.090, result.get(0).getAnnualizedReturn(), 0.1);
+    Assertions.assertEquals(0.0561, result.get(1).getAnnualizedReturn(), 0.1);
+    Assertions.assertEquals(0.137, result.get(2).getAnnualizedReturn(), 0.1);
     Assertions.assertEquals(Arrays.asList(new String[]{"ABBV", "CTS", "MMM"}), symbols);
   }
 

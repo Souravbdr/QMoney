@@ -263,6 +263,7 @@ public class PortfolioManagerApplication {
       Double sellPrice = getClosingPriceOnEndDate(candles);
       annualizedReturns.add(calculateAnnualizedReturns(endDate, trade, buyPrice, sellPrice));
     }
+    Collections.sort(annualizedReturns,(a,b) -> Double.compare(b.getAnnualizedReturn() , a.getAnnualizedReturn()));
     return annualizedReturns;
   }
 
