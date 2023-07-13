@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import org.apache.logging.log4j.ThreadContext;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -282,8 +283,10 @@ public class PortfolioManagerApplication {
   public static AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate, PortfolioTrade trade,
       Double buyPrice, Double sellPrice) {
     Double totalReturn = (sellPrice - buyPrice) / buyPrice;
-    int totalYears = endDate.getYear() - trade.getPurchaseDate().getYear() + 1;
-    Double anualReturn = Math.pow((1 + totalReturn), ((double)1 / (double)totalYears)) - 1;
+    long holdingPeriodInDays = ChronoUnit.DAYS.between(trade.getPurchaseDate(), endDate);
+    double holdingPeriodInYears = (double) holdingPeriodInDays / (double)365;
+
+    Double anualReturn = Math.pow((1 + totalReturn), (1 /holdingPeriodInYears)) - 1;
     return new AnnualizedReturn(trade.getSymbol(), anualReturn, totalReturn);
   }
 
