@@ -4,6 +4,8 @@ package com.crio.warmup.stock;
 
 import com.crio.warmup.stock.dto.*;
 import com.crio.warmup.stock.log.UncaughtExceptionHandler;
+import com.crio.warmup.stock.portfolio.PortfolioManager;
+import com.crio.warmup.stock.portfolio.PortfolioManagerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
@@ -22,12 +24,25 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.logging.log4j.ThreadContext;
 import org.springframework.web.client.RestTemplate;
 
 
 public class PortfolioManagerApplication {
 
   static RestTemplate restTemplate = new RestTemplate();
+  static private PortfolioManager portfolioManager;
 
   private static final String API = "https://api.tiingo.com/tiingo/daily/";
   private static final String SLASH = "/";
@@ -281,7 +296,7 @@ public class PortfolioManagerApplication {
   // ./gradlew test --tests PortfolioManagerApplicationTest.testCalculateAnnualizedReturn
 
   public static AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate, PortfolioTrade trade,
-      Double buyPrice, Double sellPrice) {
+    Double buyPrice, Double sellPrice) {
     Double totalReturn = (sellPrice - buyPrice) / buyPrice;
     long holdingPeriodInDays = ChronoUnit.DAYS.between(trade.getPurchaseDate(), endDate);
     double holdingPeriodInYears = (double) holdingPeriodInDays / (double)365;
@@ -290,6 +305,24 @@ public class PortfolioManagerApplication {
     return new AnnualizedReturn(trade.getSymbol(), anualReturn, totalReturn);
   }
 
+  // TODO: CRIO_TASK_MODULE_REFACTOR
+  //  Once you are done with the implementation inside PortfolioManagerImpl and
+  //  PortfolioManagerFactory, create PortfolioManager using PortfolioManagerFactory.
+  //  Refer to the code from previous modules to get the List<PortfolioTrades> and endDate, and
+  //  call the newly implemented method in PortfolioManager to calculate the annualized returns.
+
+  // Note:
+  // Remember to confirm that you are getting same results for annualized returns as in Module 3.
+
+  public static List<AnnualizedReturn> mainCalculateReturnsAfterRefactor(String[] args)
+      throws Exception {
+      // String file = args[0];
+       LocalDate endDate = LocalDate.parse(args[1]);
+       //String contents = readFileAsString(file);
+       List<PortfolioTrade> portfolioTrades = readTradesFromJson(args[0]);
+       //ObjectMapper objectMapper = getObjectMapper();
+       return portfolioManager.calculateAnnualizedReturn(portfolioTrades, endDate);
+  }
 
 
   public static void main(String[] args) throws Exception {
@@ -300,8 +333,12 @@ public class PortfolioManagerApplication {
 
 
 
-    printJsonObject(mainCalculateSingleReturn(args));
+    //printJsonObject(mainCalculateSingleReturn(args));
 
+
+
+
+    printJsonObject(mainCalculateReturnsAfterRefactor(args));
   }
 }
 
