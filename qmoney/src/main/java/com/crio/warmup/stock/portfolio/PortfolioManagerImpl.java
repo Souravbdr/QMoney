@@ -8,6 +8,7 @@ import com.crio.warmup.stock.dto.AnnualizedReturn;
 import com.crio.warmup.stock.dto.Candle;
 import com.crio.warmup.stock.dto.PortfolioTrade;
 import com.crio.warmup.stock.dto.TiingoCandle;
+import com.crio.warmup.stock.quotes.StockQuotesService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -29,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 public class PortfolioManagerImpl implements PortfolioManager {
 
   private RestTemplate restTemplate;
+  private StockQuotesService stockService;
 
   private static final String API = "https://api.tiingo.com/tiingo/daily/";
   private static final String SLASH = "/";
@@ -43,7 +45,10 @@ public class PortfolioManagerImpl implements PortfolioManager {
 
   // Caution: Do not delete or modify the constructor, or else your build will break!
   // This is absolutely necessary for backward compatibility
-  protected PortfolioManagerImpl(RestTemplate restTemplate) {
+  protected PortfolioManagerImpl(StockQuotesService stockService) {
+    this.stockService = stockService;
+  }
+  protected PortfolioManagerImpl(RestTemplate restTemplate){
     this.restTemplate = restTemplate;
   }
 
@@ -68,19 +73,14 @@ public class PortfolioManagerImpl implements PortfolioManager {
   }
 
   // CHECKSTYLE:OFF
-
-  // TODO: CRIO_TASK_MODULE_REFACTOR
-  // Extract the logic to call Tiingo third-party APIs to a separate function.
-  // Remember to fill out the buildUri function and use that.
-
-
-  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to)
-      throws JsonProcessingException {
-
+  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws JsonProcessingException{
     String url = buildUri(symbol, from, to);
     Candle[] candle = restTemplate.getForObject(url, TiingoCandle[].class);
     return Arrays.asList(candle);
   }
+  // TODO: CRIO_TASK_MODULE_REFACTOR
+  // Extract the logic to call Tiingo third-party APIs to a separate function.
+  // Remember to fill out the buildUri function and use that.
 
   protected String buildUri(String symbol, LocalDate startDate, LocalDate endDate) {
     String date = endDate.toString();
@@ -137,7 +137,7 @@ public class PortfolioManagerImpl implements PortfolioManager {
     for (PortfolioTrade trade : portfolioTrades) {
       List<Candle> candles = Collections.emptyList();
       try {
-        candles = getStockQuote(trade.getSymbol(),trade.getPurchaseDate(), endDate);
+        candles = stockService.getStockQuote(trade.getSymbol(),trade.getPurchaseDate(), endDate);
       } catch (JsonProcessingException e) {
         e.printStackTrace();
       }
@@ -149,5 +149,12 @@ public class PortfolioManagerImpl implements PortfolioManager {
     return annualizedReturns;
   }
 
+
+
+  // ¶TODO: CRIO_TASK_MODULE_ADDITIONAL_REFACTOR
+  //  Modify the function #getStockQuote and start delegating to calls to
+  //  stockQuoteService provided via newly added constructor of the class.
+  //  You also have a liberty to completely get rid of that function itself, however, make sure
+  //  that you do not delete the #getStockQuote function.
 
 }
