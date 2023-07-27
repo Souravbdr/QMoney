@@ -19,7 +19,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,7 +52,8 @@ public class PortfolioManagerImpl implements PortfolioManager {
   protected PortfolioManagerImpl(StockQuotesService stockService) {
     this.stockService = stockService;
   }
-  protected PortfolioManagerImpl(RestTemplate restTemplate){
+
+  protected PortfolioManagerImpl(RestTemplate restTemplate) {
     this.restTemplate = restTemplate;
   }
 
@@ -58,7 +62,8 @@ public class PortfolioManagerImpl implements PortfolioManager {
   }
 
   // CHECKSTYLE:OFF
-  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws JsonProcessingException{
+  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to)
+      throws JsonProcessingException {
     String url = buildUri(symbol, from, to);
     Candle[] candle = restTemplate.getForObject(url, TiingoCandle[].class);
     return Arrays.asList(candle);
@@ -122,7 +127,7 @@ public class PortfolioManagerImpl implements PortfolioManager {
     for (PortfolioTrade trade : portfolioTrades) {
       List<Candle> candles = Collections.emptyList();
       try {
-        candles = stockService.getStockQuote(trade.getSymbol(),trade.getPurchaseDate(), endDate);
+        candles = stockService.getStockQuote(trade.getSymbol(), trade.getPurchaseDate(), endDate);
       } catch (JsonProcessingException e) {
         e.printStackTrace();
       }
@@ -132,14 +137,50 @@ public class PortfolioManagerImpl implements PortfolioManager {
     }
     Collections.sort(annualizedReturns, getComparator());
     return annualizedReturns;
+
+
+
+    // Caution: Do not delete or modify the constructor, or else your build will break!
+    // This is absolutely necessary for backward compatibility
+
+
+
+    // ¶TODO: CRIO_TASK_MODULE_ADDITIONAL_REFACTOR
+    // Modify the function #getStockQuote and start delegating to calls to
+    // stockQuoteService provided via newly added constructor of the class.
+    // You also have a liberty to completely get rid of that function itself, however, make sure
+    // that you do not delete the #getStockQuote function.
+
   }
 
+  @Override
+  public List<AnnualizedReturn> calculateAnnualizedReturnParallel(
+      List<PortfolioTrade> portfolioTrades, LocalDate endDate, int numThreads)
+      throws InterruptedException, StockQuoteServiceException {
+      ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
+    // TODO Auto-generated method stub
+    List<AnnualizedReturn> annualizedReturns = new ArrayList<>();
+    Map<Future<List<Candle>>,PortfolioTrade> futureCandleList = new HashMap<>();
 
-  // ¶TODO: CRIO_TASK_MODULE_ADDITIONAL_REFACTOR
-  //  Modify the function #getStockQuote and start delegating to calls to
-  //  stockQuoteService provided via newly added constructor of the class.
-  //  You also have a liberty to completely get rid of that function itself, however, make sure
-  //  that you do not delete the #getStockQuote function.
-
+    for (PortfolioTrade trade : portfolioTrades) {
+      Callable<List<Candle>> callableTask = () -> {
+        return stockService.getStockQuote(trade.getSymbol(),trade.getPurchaseDate(), endDate);
+      };
+      futureCandleList.put(executorService.submit(callableTask),trade);
+    }
+    for(Map.Entry<Future<List<Candle>>,PortfolioTrade> futureCandles:futureCandleList.entrySet()){
+      List<Candle> candles = Collections.emptyList();
+      try {
+        candles = futureCandles.getKey().get();
+        Double buyPrice = getOpeningPriceOnStartDate(candles);
+        Double sellPrice = getClosingPriceOnEndDate(candles);
+        annualizedReturns.add(calculateAnnualizedReturns(endDate, futureCandles.getValue(), buyPrice, sellPrice));
+      } catch (ExecutionException e) {
+        throw new StockQuoteServiceException("cant get future");
+      }
+    }
+    Collections.sort(annualizedReturns, getComparator());
+    return annualizedReturns;
+  }
 }

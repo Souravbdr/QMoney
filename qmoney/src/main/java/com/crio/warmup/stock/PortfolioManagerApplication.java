@@ -329,15 +329,6 @@ public class PortfolioManagerApplication {
     Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler());
     ThreadContext.put("runId", UUID.randomUUID().toString());
 
-    // printJsonObject(mainReadQuotes(args));
-
-
-
-    //printJsonObject(mainCalculateSingleReturn(args));
-
-
-
-
     printJsonObject(mainCalculateReturnsAfterRefactor(args));
   }
 }
